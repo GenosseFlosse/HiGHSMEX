@@ -34,6 +34,12 @@ runs:
         echo "HIGHS_DIR_NAME=${highs_dir_name}" >> $GITHUB_ENV
         echo "HIGHS_ARCHIVE_NAME=${highs_dir_name}.zip" >> $GITHUB_ENV
 
+    - name: Preload System libstdc++ (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        echo "LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6" >> $GITHUB_ENV
+
     - name: Set up MATLAB
       uses: matlab-actions/setup-matlab@v2
 
@@ -86,7 +92,6 @@ runs:
         ls -al *.mex* || true
 
     - name: Check MEX functionality
-      if: runner.os != 'Linux'
       shell: bash
       run: |
         $ML_CMD "fprintf('HiGHS Version: %s\nHiGHSMEX Version: %s\n', callhighs(string('ver')), verHiGHSMEX)"

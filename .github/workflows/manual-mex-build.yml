@@ -10,7 +10,7 @@ on:
       build_linux:
         required: true
         type: boolean
-        default: false
+        default: true
       build_macos:
         required: true
         type: boolean
