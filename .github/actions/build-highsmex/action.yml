@@ -1,0 +1,116 @@
+name: Build HiGHSMEX
+description: Common build steps for all platforms
+
+inputs:
+  highs_version:
+    description: "HiGHS version to use for MEX build"
+    required: true
+    default: "1.15.1"
+
+runs:
+  using: "composite"
+  steps:
+    - name: HiGHS archive name (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        highs_dir_name="highs-${{ inputs.highs_version }}-x86_64-linux-gnu-static-apache"
+        echo "HIGHS_DIR_NAME=${highs_dir_name}" >> $GITHUB_ENV
+        echo "HIGHS_ARCHIVE_NAME=${highs_dir_name}.tar.gz" >> $GITHUB_ENV
+
+    - name: HiGHS archive name (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        highs_dir_name="highs-${{ inputs.highs_version }}-arm-apple-static-apache"
+        echo "HIGHS_DIR_NAME=${highs_dir_name}" >> $GITHUB_ENV
+        echo "HIGHS_ARCHIVE_NAME=${highs_dir_name}.tar.gz" >> $GITHUB_ENV
+
+    - name: HiGHS archive name (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        highs_dir_name="highs-${{ inputs.highs_version }}-x86_64-windows-static-apache"
+        echo "HIGHS_DIR_NAME=${highs_dir_name}" >> $GITHUB_ENV
+        echo "HIGHS_ARCHIVE_NAME=${highs_dir_name}.zip" >> $GITHUB_ENV
+
+    - name: Preload System libstdc++ (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        echo "LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6" >> $GITHUB_ENV
+
+    - name: Set up MATLAB
+      uses: matlab-actions/setup-matlab@v2
+
+    - name: Configure MATLAB
+      uses: MATPOWER/action-configure-matlab@v3-test
+
+    - name: Download & extract HiGHS ${{ inputs.highs_version }}
+      shell: bash
+      run: |
+        url="https://github.com/ERGO-Code/HiGHS/releases/download/v${{ inputs.highs_version }}/${HIGHS_ARCHIVE_NAME}"
+        parent="$(dirname "${{ github.workspace }}")"
+        echo "Parent: $parent"
+
+        archive="${parent}/${HIGHS_ARCHIVE_NAME}"
+
+        echo "Downloading: $url"
+        curl -L -o "$archive" "$url"
+        dest="${parent}/${HIGHS_DIR_NAME}"
+
+        echo "Extracting: $archive"
+        echo "      into: $dest"
+        mkdir -p "$dest"
+        if [[ "$HIGHS_ARCHIVE_NAME" == *.tar.gz ]]; then
+          tar -xzf "$archive" -C "$dest"
+        else
+          unzip -o "$archive" -d "$dest"
+        fi
+
+        echo "Parent dir listing:"
+        ls -al ..
+
+        echo "HiGHS dir: ${HIGHS_DIR_NAME}"
+        ls -al "$dest"
+        find "$dest" -maxdepth 2 -type d -print
+
+    - name: List MEX files (before)
+      shell: bash
+      run: |
+        echo "repo root MEX files"
+        ls -al *.mex* || true
+
+    - name: Build MEX
+      shell: bash
+      run: |
+        $ML_CMD "ver; cd '${{ github.workspace }}'; make_highsmex('${{ inputs.highs_version }}')"
+
+    - name: List MEX files (after)
+      shell: bash
+      run: |
+        ls -al *.mex* || true
+
+    - name: Check MEX functionality
+      shell: bash
+      run: |
+        $ML_CMD "fprintf('HiGHS Version: %s\nHiGHSMEX Version: %s\n', callhighs(string('ver')), verHiGHSMEX)"
+        $ML_CMD "c = [1;1]; soln=callhighs(c, c', 2, 2, c, c);"
+
+    - uses: actions/upload-artifact@v4
+      if: runner.os == 'Linux'
+      with:
+        name: highsmex.mexa64
+        path: highsmex.mexa64
+
+    - uses: actions/upload-artifact@v4
+      if: runner.os == 'macOS'
+      with:
+        name: highsmex.mexmaca64
+        path: highsmex.mexmaca64
+
+    - uses: actions/upload-artifact@v4
+      if: runner.os == 'Windows'
+      with:
+        name: highsmex.mexw64
+        path: highsmex.mexw64

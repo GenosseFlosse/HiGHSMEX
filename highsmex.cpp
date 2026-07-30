@@ -45,7 +45,7 @@ enum class MexCallSyntax { kVer, kDefaultOpts, kIntType, kSolve };
 
 // Compile time constants
 constexpr ArrayType   HighsInt2MatlabArrayType = std::is_same_v<HighsInt, int32_t> ? ArrayType::INT32 : ArrayType::INT64;
-constexpr std::string HighsInt2MatlabClassStr = std::is_same_v<HighsInt, int32_t> ? "int32" : "int64";
+const std::string HighsInt2MatlabClassStr = std::is_same_v<HighsInt, int32_t> ? "int32" : "int64";
 constexpr bool        MexDebugPrinting = 0;
 
 // Const variables
@@ -154,7 +154,7 @@ bool isEqualFieldnames(const std::vector<std::string>& f1, const std::vector<std
 	if (f1.size() != f2.size()) return false;
 	const std::set<std::string> f2set(f2.begin(), f2.end());
 	for (auto const& s : f1) {
-		if (!f2set.contains(s)) return false;
+		if (f2set.find(s) == f2set.end()) return false;
 	}
 	return true;
 }
