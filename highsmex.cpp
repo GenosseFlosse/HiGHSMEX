@@ -1446,17 +1446,6 @@ class MexFunction : public Function {
 	}
 
 	void runSolver(ArgumentList& inputs, Highs& highs, HighsModel& highsModel) {
-		// Set callback with Highs
-		auto callback = [this](int callbackType, const std::string& message, const HighsCallbackOutput* dataOut, HighsCallbackInput*, void*) -> void {
-			logCallback(callbackType, static_cast<HighsLogType>(dataOut->log_type), message);
-			};
-		if (highs.setCallback(callback, nullptr) != HighsStatus::kOk) {
-			throw std::runtime_error("Failed to set the logging callback with HiGHS.");
-		}
-		checkHighsReturnStatus(highs.startCallback(HighsCallbackType::kCallbackLogging),
-			"Warning issued when attempting to start the logging callback.",
-			"Failed to start the logging callback.");
-
 		// Process input arguments
 		auto proc1stArgResults = process1stArgIn(inputs);
 		if (proc1stArgResults.isMultiObjective) {
@@ -1478,6 +1467,21 @@ class MexFunction : public Function {
 		process8thArgIn(inputs, highsModel);
 		process9thArgIn(inputs, highs);
 		process10thArgIn(inputs, highsModel);
+
+		bool log_to_console;
+		highs.getOptionValue("log_to_console", log_to_console);
+		if (log_to_console) {
+			// Set callback with Highs
+			auto callback = [this](int callbackType, const std::string& message, const HighsCallbackOutput* dataOut, HighsCallbackInput*, void*) -> void {
+				logCallback(callbackType, static_cast<HighsLogType>(dataOut->log_type), message);
+				};
+			if (highs.setCallback(callback, nullptr) != HighsStatus::kOk) {
+				throw std::runtime_error("Failed to set the logging callback with HiGHS.");
+			}
+			checkHighsReturnStatus(highs.startCallback(HighsCallbackType::kCallbackLogging),
+				"Warning issued when attempting to start the logging callback.",
+				"Failed to start the logging callback.");
+		}
 
 		// Pass constraints and hessian to HiGHS
 		checkHighsReturnStatus(highs.passModel(highsModel),
