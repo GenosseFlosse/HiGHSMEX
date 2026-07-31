@@ -1481,6 +1481,7 @@ class MexFunction : public Function {
 			checkHighsReturnStatus(highs.startCallback(HighsCallbackType::kCallbackLogging),
 				"Warning issued when attempting to start the logging callback.",
 				"Failed to start the logging callback.");
+			highs.setOptionValue("log_to_console", false);
 		}
 
 		// Pass constraints and hessian to HiGHS
