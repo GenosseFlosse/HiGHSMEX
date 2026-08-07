@@ -23,19 +23,15 @@ function nFail = test_callhighs_iis(nRandom)
 %
 % GUROBI:
 % The Gurobi cross-check is run when the Gurobi MATLAB interface can be
-% located. It is looked for in the "matlab" folder of the installation named
-% by the GUROBI_HOME environment variable, e.g.
-%   Windows  GUROBI_HOME=C:\gurobi1302\win64
-%   Linux    GUROBI_HOME=/opt/gurobi1302/linux64
-% and, failing that, on the MATLAB search path. If neither yields a working
-% and licensed installation, the cross-check is skipped, which is not a
-% failure.
+% located, see findgurobi for how that is done via the GUROBI_HOME environment
+% variable. Without a working and licensed installation the cross-check is
+% skipped, which is not a failure.
 %
 % EXAMPLES:
 % nFail = test_callhighs_iis();
 % assert(nFail == 0)
 %
-% See also callhighs_iis, validateiis.
+% See also callhighs_iis, validateiis, findgurobi, test_callhighs.
 %
 % Covered by the MIT License (see LICENSE file for details).
 % See https://github.com/savyasachi/HiGHSMEX for more information.
@@ -123,7 +119,7 @@ end
 
 %% ----------------------------------------------------------- gurobi compare
 fprintf("\n== cross-check against gurobi_iis ==\n");
-[haveGurobi, gurobiWhere] = addgurobi();
+[haveGurobi, gurobiWhere] = findgurobi();
 if ~haveGurobi
     fprintf("  SKIP  %s\n", gurobiWhere);
 else
@@ -237,46 +233,6 @@ end
 function m = model(name, c, A, L, U, l, u)
 
 m = struct("name", string(name), "c", c, "A", A, "L", L, "U", U, "l", l, "u", u);
-
-% ----------------------------------------------------------------------- %
-
-function [tf, where] = addgurobi()
-% Locate the Gurobi MATLAB interface, preferring GUROBI_HOME, and verify that
-% it is licensed by solving a one variable model.
-
-where = "";
-home = getenv("GUROBI_HOME");
-if strlength(home) > 0
-    candidate = fullfile(home, "matlab");
-    if isfolder(candidate) && isfile(fullfile(candidate, "gurobi_iis.m"))
-        addpath(candidate);
-        where = candidate;
-    end
-end
-if strlength(where) == 0
-    if exist("gurobi_iis", "file")
-        where = string(fileparts(which("gurobi_iis")));
-    elseif strlength(home) == 0
-        tf = false;
-        where = "GUROBI_HOME is not set and gurobi_iis is not on the MATLAB path.";
-        return
-    else
-        tf = false;
-        where = "No Gurobi MATLAB interface in """ + fullfile(home, "matlab") + """ and none on the MATLAB path.";
-        return
-    end
-end
-
-try
-    probe = struct("A", sparse(1, 1, 1), "obj", 0, "sense", '>', "rhs", 1, ...
-        "lb", 0, "ub", 2, "modelsense", 'min');
-    gurobi(probe, struct("OutputFlag", 0));
-catch ME
-    tf = false;
-    where = "Gurobi found in """ + where + """ but not usable: " + string(ME.message);
-    return
-end
-tf = true;
 
 % ----------------------------------------------------------------------- %
 

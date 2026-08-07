@@ -35,6 +35,22 @@ The HiGHS IIS facility is available for **linear** programs only, hence *callhig
 
 **Caution:** Do not call the *highsmex_iis* function directly, and only use the *callhighs_iis* function.
 
+### Tests
+
+Two test functions are provided, each returning the number of failed checks.
+
++ ```test_callhighs``` checks the interface of *callhighs* and then calls ```validatehighsmex```, which solves a set of LP, MILP and QP models and verifies each solution directly against the model it came from: the variable bounds, the rows and the integrality are checked, and the objective is recomputed from the returned solution.
++ ```test_callhighs_iis``` checks the interface of *callhighs_iis* and verifies every IIS against the definition of an IIS using ```validateiis```.
+
+Both additionally cross-check against [Gurobi](https://www.gurobi.com/) when it is available. *validatehighsmex* compares the model status and the optimal objective value, and *test_callhighs_iis* compares against ```gurobi_iis```. Gurobi is located by ```findgurobi``` via the ```GUROBI_HOME``` environment variable, e.g. ```GUROBI_HOME=C:\gurobi1302\win64```, or from the MATLAB search path. Gurobi is entirely optional; without it the comparisons are skipped and the remaining checks still run.
+
+Note that neither comparison requires the two solvers to return the same solution. An optimal point need not be unique, and neither need an IIS, so only quantities that are well defined are compared: the model status, the optimal objective value, and, for an IIS, whether the result actually satisfies the definition.
+
+```matlab
+assert(test_callhighs() == 0)
+assert(test_callhighs_iis() == 0)
+```
+
 HiGHSMEX provides access to almost all the capabilities of HiGHS library except the following
 + Reading problem data from a model file. 
 + Setting names for the rows and columns of the model, or setting name for the objective.

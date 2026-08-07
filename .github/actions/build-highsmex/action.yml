@@ -95,7 +95,7 @@ runs:
       shell: bash
       run: |
         $ML_CMD "fprintf('HiGHS Version: %s\nHiGHSMEX Version: %s\n', callhighs(string('ver')), verHiGHSMEX)"
-        $ML_CMD "c = [1;1]; soln=callhighs(c, c', 2, 2, c, c);"
+        $ML_CMD "nFail = test_callhighs(); assert(nFail == 0, '%d check(s) failed', nFail)"
 
     - name: Check IIS MEX functionality
       shell: bash
